@@ -10,15 +10,29 @@ import Grid from '@material-ui/core/Grid';
 import CardMedia from '@material-ui/core/CardMedia';
 import CardActionArea from '@material-ui/core/CardActionArea';
 import Container from '@material-ui/core/Container';
+import Drawer from '@material-ui/core/Drawer';
+import ShoppingCart from './components/ShoppingCart';
+
 import { positions } from '@material-ui/system';
 
-const useStyles = makeStyles({
+const useStyles = makeStyles((theme) =>({
   root: {
     justifyContent: 'center',
     height: 400
   },
+  ca: {
+    textAlign: "center"
+  },
   caa: {
     height: 350
+  },
+  di: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    '& > *': {
+      margin: theme.spacing(1),
+    },
   },
   media: {
     height: 240
@@ -38,8 +52,20 @@ const useStyles = makeStyles({
   img: {
     height: 200
   }
-});
+}));
 
+const cart2 = {
+   "12064273040195392": {
+     "sku": 12064273040195392,
+     "count": 2,
+     "price": 10.9
+   },
+   "51498472915966370": {
+     "sku": 51498472915966370,
+     "count": 1,
+     "price": 26.45
+   }
+ };
 const imgParser = (sku) => {
   const prefix = "data/products/";
   const suffix = "_1.jpg";
@@ -50,8 +76,10 @@ const SimpleCardList = ({products}) => {
   return (
     <React.Fragment>
     <Grid container spacing={2} alignItems={"center"}>
-        {products.map((item) => (
-            <SimpleCard item={item}/>
+        {products.map((item,index) => (
+            <SimpleCard item={item}
+            key={item.sku}
+            index={index}/>
         ))}
     </Grid>
     </React.Fragment>
@@ -62,7 +90,7 @@ const SimpleCard = ({item}) => {
   const classes = useStyles();
 
   return (
-    <Grid container item xs={4} justify={"center"} align-items-xs-center={true}>
+    <Grid container item xs={4} justify={"center"}>
     <Card className={classes.root}>
     <CardActionArea className={classes.caa}>
       <Typography className={classes.title} align="center">
@@ -78,18 +106,20 @@ const SimpleCard = ({item}) => {
         <Typography variant="body2" component="p">
          ${item.price}
         </Typography>
-        <Typography variant="body3" component="p">
+        <Typography variant="caption" component="p">
          {item.description}
         </Typography>
       </CardContent>
       </CardActionArea>
-      <CardActions>
+      <CardActions className={classes.ca}>
+      <div className={classes.di}>
       <ButtonGroup position="bottom" className={classes.bg}>
         <Button className={classes.pos}>S</Button>
         <Button className={classes.pos}>M</Button>
         <Button className={classes.pos}>L</Button>
         <Button className={classes.pos}>XL</Button>
       </ButtonGroup>
+      </div>
       </CardActions>
     </Card>
     </Grid>
@@ -98,6 +128,7 @@ const SimpleCard = ({item}) => {
 
 const App = () => {
   const [data, setData] = useState({});
+  const [cart, setCart] = useState(Object.values(cart2));
   const products = Object.values(data);
   useEffect(() => {
     const fetchProducts = async () => {
@@ -109,8 +140,13 @@ const App = () => {
   }, []);
 
   return (
-    <Container maxWidth="sm">
-    <SimpleCardList products = {products}></SimpleCardList>
+    <Container>
+      <Container maxWidth="sm">
+      <SimpleCardList products = {products}></SimpleCardList>
+      </Container>
+      <Container>
+      <ShoppingCart cart={cart} setcart={setCart}></ShoppingCart>
+      </Container>
     </Container>
   );
 };
