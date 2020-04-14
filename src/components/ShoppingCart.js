@@ -19,7 +19,7 @@ const useStyles = makeStyles({
   },
 });
 
-export default function ShoppingCart({cart, style}) {
+export default function ShoppingCart({cart, style, removeitem}) {
   const classes = useStyles();
   const [state, setState] = React.useState(true);
 
@@ -37,7 +37,7 @@ export default function ShoppingCart({cart, style}) {
       onKeyDown={toggleDrawer(state, false)}
     >
     <Button onClick={toggleDrawer(state,false)}>Close</Button>
-    <SmallCardsList cart={cart}></SmallCardsList>
+    <SmallCardsList cart={cart} removeitem={removeitem}></SmallCardsList>
     </div>
   );
 

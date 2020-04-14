@@ -53,13 +53,14 @@ const imgParser = (sku) => {
   return (prefix+sku+suffix);
 }
 
-const SmallCardsList = ({cart, setcart}) => {
+const SmallCardsList = ({cart, setcart, removeitem}) => {
   return (
     <React.Fragment>
     <Grid container spacing={0} alignItems={"center"}>
         {cart.map((item) => (
             <SmallCard item={item}
-            key={item.sku}/>
+            key={item.sku}
+            removeitem={removeitem}/>
         ))}
     </Grid>
     <Typography>
@@ -70,7 +71,7 @@ const SmallCardsList = ({cart, setcart}) => {
   );
 }
 
-const SmallCard = ({item, key, index}) => {
+const SmallCard = ({item, key, index, removeitem}) => {
   const classes = useStyles();
 
   return (
@@ -83,6 +84,7 @@ const SmallCard = ({item, key, index}) => {
         title ={item.sku}
       />
     </CardActionArea>
+    <Button onClick={() => removeitem(item.sku)}>Remove</Button>
     <p>{item.count}</p>
     </Card>
   );

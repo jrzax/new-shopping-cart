@@ -75,10 +75,19 @@ const SimpleCardList = ({products,cart,setcart}) => {
     }
     setcart(newCart);
   };
+  const removeitem = (num) => {
+    let newCart = [...cart];
+    if(cart.find(({sku}) =>  sku == num).count > 1) {
+      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i].count -= 1; });
+    } else {
+      newCart = newCart.filter(function(item) {return item.sku != num});
+    }
+    setcart(newCart);
+  };
   return (
     <React.Fragment>
     <Box display="flex" flexDirection="row-reverse">
-      <ShoppingCart cart={cart} style={{marginRight: "auto"}}></ShoppingCart>
+      <ShoppingCart cart={cart} style={{marginRight: "auto"}} removeitem={removeitem}></ShoppingCart>
     </Box>
     <Container maxWidth="sm">
     <Grid container spacing={2} alignItems={"center"}>
