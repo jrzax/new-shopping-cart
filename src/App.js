@@ -12,19 +12,18 @@ import CardActionArea from '@material-ui/core/CardActionArea';
 import Container from '@material-ui/core/Container';
 import Drawer from '@material-ui/core/Drawer';
 import ShoppingCart from './components/ShoppingCart';
+import Box from '@material-ui/core/Box';
 
 import { positions } from '@material-ui/system';
 
 const useStyles = makeStyles((theme) =>({
   root: {
-    justifyContent: 'center',
-    height: 400
+    justifyContent: 'center'
   },
   ca: {
     textAlign: "center"
   },
   caa: {
-    height: 350
   },
   di: {
     display: 'flex',
@@ -54,48 +53,60 @@ const useStyles = makeStyles((theme) =>({
   }
 }));
 
-const cart2 = {
-   "12064273040195392": {
-     "sku": 12064273040195392,
-     "count": 2,
-     "price": 10.9
-   },
-   "51498472915966370": {
-     "sku": 51498472915966370,
-     "count": 1,
-     "price": 26.45
-   }
- };
+
 const imgParser = (sku) => {
   const prefix = "data/products/";
   const suffix = "_1.jpg";
   return (prefix+sku+suffix);
 }
 
-const SimpleCardList = ({products}) => {
+const SimpleCardList = ({products,cart,setcart}) => {
+  const handleClick = (num, price) => {
+    let newCart = [...cart];
+    if(cart.find(({sku}) => sku == num) != undefined) {
+      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i].count += 1; });
+    } else {
+      let obj ={
+        "sku": num,
+        "count": 1,
+        "price": price
+      };
+      newCart.push(obj);
+    }
+    setcart(newCart);
+  };
   return (
     <React.Fragment>
+    <Box display="flex" flexDirection="row-reverse">
+      <ShoppingCart cart={cart} style={{marginRight: "auto"}}></ShoppingCart>
+    </Box>
+    <Container maxWidth="sm">
     <Grid container spacing={2} alignItems={"center"}>
         {products.map((item,index) => (
             <SimpleCard item={item}
             key={item.sku}
-            index={index}/>
+            index={index}
+            action={handleClick}
+            />
         ))}
     </Grid>
+    </Container>
     </React.Fragment>
   );
 }
 
-const SimpleCard = ({item}) => {
+const SimpleCard = ({item,key,index,action}) => {
   const classes = useStyles();
 
   return (
     <Grid container item xs={4} justify={"center"}>
     <Card className={classes.root}>
     <CardActionArea className={classes.caa}>
+      <Box>
       <Typography className={classes.title} align="center">
         {item.title}
       </Typography>
+      </Box>
       <CardMedia
         component = "img"
         className={classes.media}
@@ -113,7 +124,7 @@ const SimpleCard = ({item}) => {
       </CardActionArea>
       <CardActions className={classes.ca}>
       <div className={classes.di}>
-      <ButtonGroup position="bottom" className={classes.bg}>
+      <ButtonGroup position="bottom" className={classes.bg} onClick={() => action(item.sku,item.price)}>
         <Button className={classes.pos}>S</Button>
         <Button className={classes.pos}>M</Button>
         <Button className={classes.pos}>L</Button>
@@ -127,8 +138,10 @@ const SimpleCard = ({item}) => {
 }
 
 const App = () => {
+  const classes = useStyles();
   const [data, setData] = useState({});
-  const [cart, setCart] = useState(Object.values(cart2));
+  const [carty, setCart] = useState({});
+  const cart = Object.values(carty)
   const products = Object.values(data);
   useEffect(() => {
     const fetchProducts = async () => {
@@ -140,13 +153,8 @@ const App = () => {
   }, []);
 
   return (
-    <Container>
-      <Container maxWidth="sm">
-      <SimpleCardList products = {products}></SimpleCardList>
-      </Container>
-      <Container>
-      <ShoppingCart cart={cart} setcart={setCart}></ShoppingCart>
-      </Container>
+    <Container >
+        <SimpleCardList products = {products} cart={cart} setcart={setCart}></SimpleCardList>
     </Container>
   );
 };

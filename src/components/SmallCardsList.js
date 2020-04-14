@@ -14,6 +14,8 @@ import CardActionArea from '@material-ui/core/CardActionArea';
 const useStyles = makeStyles((theme) =>({
   root: {
     justifyContent: 'center',
+    marginRight: '10px',
+    marginLeft: '10px',
   },
   ca: {
     textAlign: "center"
@@ -46,7 +48,7 @@ const useStyles = makeStyles((theme) =>({
 }));
 
 const imgParser = (sku) => {
-  const prefix = "data/products/";
+  const prefix = "data/products//";
   const suffix = "_2.jpg";
   return (prefix+sku+suffix);
 }
@@ -55,19 +57,20 @@ const SmallCardsList = ({cart, setcart}) => {
   return (
     <React.Fragment>
     <Grid container spacing={0} alignItems={"center"}>
-        {cart.map((item,index) => (
+        {cart.map((item) => (
             <SmallCard item={item}
-            key={item.sku}
-            index={index}/>
+            key={item.sku}/>
         ))}
     </Grid>
-    <p>Total</p>
+    <Typography>
+    Total
     <p>${cart.reduce((a,b) => a + (b['count']*b['price'] || 0), 0)}</p>
+    </Typography>
     </React.Fragment>
   );
 }
 
-const SmallCard = ({item}) => {
+const SmallCard = ({item, key, index}) => {
   const classes = useStyles();
 
   return (

@@ -19,7 +19,7 @@ const useStyles = makeStyles({
   },
 });
 
-export default function ShoppingCart({cart, setcart}) {
+export default function ShoppingCart({cart, style}) {
   const classes = useStyles();
   const [state, setState] = React.useState(true);
 
@@ -36,19 +36,19 @@ export default function ShoppingCart({cart, setcart}) {
       onClick={toggleDrawer(state, false)}
       onKeyDown={toggleDrawer(state, false)}
     >
-    <SmallCardsList cart={cart} setcart={setcart}></SmallCardsList>
+    <Button onClick={toggleDrawer(state,false)}>Close</Button>
+    <SmallCardsList cart={cart}></SmallCardsList>
     </div>
   );
 
   return (
     <div>
         <React.Fragment key={state}>
-          <Button onClick={toggleDrawer(state, true)}>{state}</Button>
+          <Button onClick={toggleDrawer(state, true)}>{'cart'}</Button>
           <Drawer anchor={'right'} open={state} onClose={toggleDrawer(state, false)}>
             {list(state)}
           </Drawer>
         </React.Fragment>
-      ))}
     </div>
   );
 }
