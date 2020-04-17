@@ -13,8 +13,24 @@ import Container from '@material-ui/core/Container';
 import Drawer from '@material-ui/core/Drawer';
 import ShoppingCart from './components/ShoppingCart';
 import Box from '@material-ui/core/Box';
+import firebase from 'firebase/app';
+import 'firebase/database';
 
 import { positions } from '@material-ui/system';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDUjoownQ2PtLf0yIIGSSZdgjgLSWT2muQ",
+  authDomain: "new-shopping-cart-3e657.firebaseapp.com",
+  databaseURL: "https://new-shopping-cart-3e657.firebaseio.com",
+  projectId: "new-shopping-cart-3e657",
+  storageBucket: "new-shopping-cart-3e657.appspot.com",
+  messagingSenderId: "961078311480",
+  appId: "1:961078311480:web:58dc911f52631083fd04cd",
+  measurementId: "G-QT85J2D1D1"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database().ref();
 
 const useStyles = makeStyles((theme) =>({
   root: {
@@ -210,12 +226,13 @@ const App = () => {
       setData(productjson);
     };
     fetchProducts();
-    const fetchinventory = async ()  => {
-      const response = await fetch('./data/inventory.json');
-      const inventoryjson = await response.json();
-      processInventory(inventoryjson)
-    };
-    fetchinventory();
+  }, []);
+  useEffect(() => {
+    const handleData = snap => {
+      if (snap.val()) processInventory(snap.val());
+    }
+    db.on('value', handleData, error => alert(error));
+    return () => { db.off('value', handleData); };
   }, []);
 
 
