@@ -60,28 +60,42 @@ const imgParser = (sku) => {
   return (prefix+sku+suffix);
 }
 
-const SimpleCardList = ({products,cart,setcart}) => {
-  const handleClick = (num, price) => {
+const SimpleCardList = ({products,cart,setcart, inventory, setinventory}) => {
+  const handleClick = (num, price, size) => {
     let newCart = [...cart];
+    let newInventory = [...inventory];
+    console.log(size);
     if(cart.find(({sku}) => sku == num) != undefined) {
-      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i].count += 1; });
+      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i][size] += 1; });
+      newInventory.forEach(function(item, i) { if (item.sku == num) newInventory[i][size] -= 1; });
     } else {
       let obj ={
         "sku": num,
-        "count": 1,
+        "S": 0,
+        "M": 0,
+        "L": 0,
+        "XL": 0,
         "price": price
       };
+      obj[size] += 1;
       newCart.push(obj);
+      newInventory.forEach(function(item, i) { if (item.sku == num) newInventory[i][size] -= 1; });
     }
     setcart(newCart);
+    setinventory(newInventory);
+    console.log(newInventory);
   };
   const removeitem = (num) => {
     let newCart = [...cart];
-    if(cart.find(({sku}) =>  sku == num).count > 1) {
-      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i].count -= 1; });
-    } else {
-      newCart = newCart.filter(function(item) {return item.sku != num});
-    }
+    let newInventory = [...inventory]
+    let found = newCart.find((item) => item.sku == num);
+    newCart = newCart.filter(function(item) {return item.sku != num});
+    newInventory.forEach(function(item, i) { if (item.sku == num){
+      newInventory[i]["S"] = found["S"];
+      newInventory[i]["M"] = found["M"];
+      newInventory[i]["L"] = found["L"];
+      newInventory[i]["XL"] = found["XL"];}});
+    setinventory(newInventory);
     setcart(newCart);
   };
   return (
@@ -93,9 +107,11 @@ const SimpleCardList = ({products,cart,setcart}) => {
     <Grid container spacing={2} alignItems={"center"}>
         {products.map((item,index) => (
             <SimpleCard item={item}
-            key={item.sku}
+            num={item.sku}
             index={index}
             action={handleClick}
+            inventory={inventory}
+            setinventory={setinventory}
             />
         ))}
     </Grid>
@@ -104,8 +120,31 @@ const SimpleCardList = ({products,cart,setcart}) => {
   );
 }
 
-const SimpleCard = ({item,key,index,action}) => {
+const SimpleCard = ({item, num, index,action, inventory, setinventory}) => {
   const classes = useStyles();
+  const disabled = () => {
+    let result = [true,true,true,true];
+    if (Object.entries(inventory).length === 0) {
+      return result
+    } else {
+        if(inventory.find((elem) =>  elem.sku == num) != undefined) {
+          if(inventory.find((elem) =>  elem.sku == num)["S"] > 0){
+            result[0] = false;
+          }
+          if(inventory.find((elem) =>  elem.sku == num)["M"] > 0){
+            result[1] = false;
+          }
+          if(inventory.find((elem) =>  elem.sku == num)["L"] > 0){
+            result[2] = false;
+          }
+          if(inventory.find((elem) =>  elem.sku == num)["XL"] > 0){
+            result[3] = false;
+          }
+        }
+      }
+    return result;
+  };
+  const disable = disabled();
 
   return (
     <Grid container item xs={4} justify={"center"}>
@@ -133,11 +172,11 @@ const SimpleCard = ({item,key,index,action}) => {
       </CardActionArea>
       <CardActions className={classes.ca}>
       <div className={classes.di}>
-      <ButtonGroup position="bottom" className={classes.bg} onClick={() => action(item.sku,item.price)}>
-        <Button className={classes.pos}>S</Button>
-        <Button className={classes.pos}>M</Button>
-        <Button className={classes.pos}>L</Button>
-        <Button className={classes.pos}>XL</Button>
+      <ButtonGroup position="bottom" className={classes.bg}>
+        <Button className={classes.pos} onClick={() => action(item.sku,item.price,"S")} disabled = {disable[0]}>S</Button>
+        <Button className={classes.pos} onClick={() => action(item.sku,item.price,"M")} disabled = {disable[1]}>M</Button>
+        <Button className={classes.pos} onClick={() => action(item.sku,item.price,"L")} disabled = {disable[2]}>L</Button>
+        <Button className={classes.pos} onClick={() => action(item.sku,item.price,"XL")} disabled = {disable[3]}>XL</Button>
       </ButtonGroup>
       </div>
       </CardActions>
@@ -146,24 +185,43 @@ const SimpleCard = ({item,key,index,action}) => {
   );
 }
 
+
 const App = () => {
   const classes = useStyles();
   const [data, setData] = useState({});
-  const [carty, setCart] = useState({});
-  const cart = Object.values(carty)
+  const [inventory, setInventory] = useState({});
+  const [cartdata, setCart] = useState({});
+  const cart = Object.values(cartdata)
   const products = Object.values(data);
+  const processInventory = (json) => {
+    const keys = Object.keys(json);
+    const values = Object.values(json);
+    let newvals = [...values];
+    for (let i = 0; i < newvals.length; i += 1)  {
+      newvals[i].sku = keys[i]
+    }
+    setInventory(newvals);
+    console.log([...newvals])
+  };
   useEffect(() => {
     const fetchProducts = async () => {
       const response = await fetch('./data/products.json');
-      const json = await response.json();
-      setData(json);
+      const productjson = await response.json();
+      setData(productjson);
     };
     fetchProducts();
+    const fetchinventory = async ()  => {
+      const response = await fetch('./data/inventory.json');
+      const inventoryjson = await response.json();
+      processInventory(inventoryjson)
+    };
+    fetchinventory();
   }, []);
+
 
   return (
     <Container >
-        <SimpleCardList products = {products} cart={cart} setcart={setCart}></SimpleCardList>
+        <SimpleCardList products = {products} cart={cart} setcart={setCart} inventory={inventory} setinventory={setInventory}></SimpleCardList>
     </Container>
   );
 };

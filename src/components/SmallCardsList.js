@@ -20,6 +20,9 @@ const useStyles = makeStyles((theme) =>({
   ca: {
     textAlign: "center"
   },
+  p: {
+    fontSize: "8px",
+  },
   caa: {
   },
   di: {
@@ -44,6 +47,12 @@ const useStyles = makeStyles((theme) =>({
     fontSize: 10
   },
   img: {
+  },
+  leftside: {
+    marginLeft: '3px'
+  },
+  rightide: {
+    marginRight: '3px'
   }
 }));
 
@@ -54,24 +63,25 @@ const imgParser = (sku) => {
 }
 
 const SmallCardsList = ({cart, setcart, removeitem}) => {
+  const classes = useStyles();
   return (
     <React.Fragment>
     <Grid container spacing={0} alignItems={"center"}>
         {cart.map((item) => (
             <SmallCard item={item}
-            key={item.sku}
+            sku={item.sku}
             removeitem={removeitem}/>
         ))}
     </Grid>
-    <Typography>
+    <Typography className={classes.rightside}>
     Total
-    <p>${cart.reduce((a,b) => a + (b['count']*b['price'] || 0), 0)}</p>
+    <p>${cart.reduce((a,b) => a + (b['S']*b['price']+b['M']*b['price']+b['L']*b['price']+b['XL']*b['price'] || 0), 0)}</p>
     </Typography>
     </React.Fragment>
   );
 }
 
-const SmallCard = ({item, key, index, removeitem}) => {
+const SmallCard = ({item, sku, index, removeitem}) => {
   const classes = useStyles();
 
   return (
@@ -80,12 +90,35 @@ const SmallCard = ({item, key, index, removeitem}) => {
       <CardMedia
         component = "img"
         className={classes.media}
-        image = {imgParser(item.sku)}
-        title ={item.sku}
+        image = {imgParser(sku)}
+        title ={sku}
       />
     </CardActionArea>
-    <Button onClick={() => removeitem(item.sku)}>Remove</Button>
-    <p>{item.count}</p>
+    <Grid container spacing={3}>
+       <Grid container item xs>
+          <Typography variant="body2" className={classes.leftside}>
+          S: {item["S"]}
+          </Typography>
+       </Grid>
+       <Grid container item xs>
+          <Typography variant="body2" className={classes.rightside}>
+          M: {item["M"]}
+          </Typography>
+       </Grid>
+    </Grid>
+    <Grid container spacing={3}>
+      <Grid container item xs>
+          <Typography variant="body2" className={classes.leftside}>
+          L: {item["L"]}
+          </Typography>
+      </Grid>
+      <Grid container item xs>
+          <Typography variant="body2" className={classes.rightside}>
+          XL: {item["XL"]}
+          </Typography>
+      </Grid>
+     </Grid>
+     <Button onClick={() => removeitem(sku)}>Remove</Button>
     </Card>
   );
 }
