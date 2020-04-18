@@ -4,6 +4,7 @@ import Card from '@material-ui/core/Card';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
+import { Message } from 'rbx';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
@@ -12,25 +13,47 @@ import CardActionArea from '@material-ui/core/CardActionArea';
 import Container from '@material-ui/core/Container';
 import Drawer from '@material-ui/core/Drawer';
 import ShoppingCart from './components/ShoppingCart';
+import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth'
 import Box from '@material-ui/core/Box';
-import firebase from 'firebase/app';
+import firebase from './shared/firebase.js';
 import 'firebase/database';
 
 import { positions } from '@material-ui/system';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDUjoownQ2PtLf0yIIGSSZdgjgLSWT2muQ",
-  authDomain: "new-shopping-cart-3e657.firebaseapp.com",
-  databaseURL: "https://new-shopping-cart-3e657.firebaseio.com",
-  projectId: "new-shopping-cart-3e657",
-  storageBucket: "new-shopping-cart-3e657.appspot.com",
-  messagingSenderId: "961078311480",
-  appId: "1:961078311480:web:58dc911f52631083fd04cd",
-  measurementId: "G-QT85J2D1D1"
-};
-
-firebase.initializeApp(firebaseConfig);
 const db = firebase.database().ref();
+
+const uiConfig = {
+  signInFlow: 'popup',
+  signInOptions: [
+    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ],
+  callbacks: {
+    signInSuccessWithAuthResult: () => false
+  }
+};
+const Welcome = ({ user }) => (
+  <Message color="info">
+    <Message.Header>
+      Welcome, {user.displayName}
+      <Button primary onClick={() => firebase.auth().signOut()}>
+        Log out
+      </Button>
+    </Message.Header>
+  </Message>
+);
+
+const Banner = ({ user, title }) => (
+  <React.Fragment>
+    { user ? <Welcome user={ user } /> : <SignIn /> }
+  </React.Fragment>
+);
+
+const SignIn = () => (
+  <StyledFirebaseAuth
+    uiConfig={uiConfig}
+    firebaseAuth={firebase.auth()}
+  />
+);
 
 const useStyles = makeStyles((theme) =>({
   root: {
@@ -209,6 +232,7 @@ const App = () => {
   const [cartdata, setCart] = useState({});
   const cart = Object.values(cartdata)
   const products = Object.values(data);
+  const [user, setUser] = useState(null);
   const processInventory = (json) => {
     const keys = Object.keys(json);
     const values = Object.values(json);
@@ -234,11 +258,15 @@ const App = () => {
     db.on('value', handleData, error => alert(error));
     return () => { db.off('value', handleData); };
   }, []);
+  useEffect(() => {
+   firebase.auth().onAuthStateChanged(setUser);
+  }, []);
 
 
   return (
     <Container >
-        <SimpleCardList products = {products} cart={cart} setcart={setCart} inventory={inventory} setinventory={setInventory}></SimpleCardList>
+      <Banner user={ user }/>
+      <SimpleCardList products = {products} cart={cart} setcart={setCart} inventory={inventory} setinventory={setInventory}></SimpleCardList>
     </Container>
   );
 };
