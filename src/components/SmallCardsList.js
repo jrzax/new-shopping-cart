@@ -67,11 +67,21 @@ const imgParser = (sku) => {
   return (prefix+sku+suffix);
 }
 
+const revertinv = (inventory) => {
+  let result = {}
+  const pullsku = (elem) => {
+    let sku = elem.sku
+    delete elem.sku
+    result[sku] = elem
+  }
+  inventory.forEach(element => pullsku(element))
+  return result
+}
+
 const SmallCardsList = ({cart, setcart, removeitem, inventory, user}) => {
   const classes = useStyles();
   const [flag, setFlag] = useState([false, []]);
   const updateItems = () => {
-    console.log(flag[1]);
     for (let num of flag[1]) {
       let found = cart.filter(function(item)  {return item[0] == num})
       let newbin = {};
@@ -89,11 +99,28 @@ const SmallCardsList = ({cart, setcart, removeitem, inventory, user}) => {
       if(invitem["XL"]-found[0][1]["XL"] < 0){
         newbin[num]["XL"] = invitem["XL"];
       }
-      console.log(newbin)
       if(user != null) db.ref(`cart/${user.uid}`).update(newbin);
     }
+    }
+  const checkout = () => {
+    let newinv = [...inventory]
+    const updateinv = (element) => {
+      const newinvitem = newinv.find(x => x.sku.toString() == element[0]);
+      newinv = newinv.filter(x => x.sku.toString() != element[0]);
+      newinvitem["S"] -= element[1]["S"];
+      newinvitem["M"] -= element[1]["M"]
+      newinvitem["L"] -= element[1]["L"]
+      newinvitem["XL"] -= element[1]["XL"]
+      newinv.push(newinvitem)
+    }
+    console.log(newinv)
+    cart.forEach(element => updateinv(element))
+    console.log(newinv)
+    if(user != null) db.ref(`cart/${user.uid}`).set({});
+    const dbinv = revertinv(newinv)
+    console.log(dbinv)
+    db.ref(`inventory`).set(dbinv);
   };
-  console.log(Object.values(cart))
   return (
     <React.Fragment>
     <Grid container spacing={0} alignItems={"center"}>
@@ -110,7 +137,7 @@ const SmallCardsList = ({cart, setcart, removeitem, inventory, user}) => {
     Total
     <p>${Object.values(cart).reduce((a,b) => a + (b[1]['S']*b[1]['price']+b[1]['M']*b[1]['price']+b[1]['L']*b[1]['price']+b[1]['XL']*b[1]['price'] || 0), 0)}</p>
     </Typography>
-      { flag[0] ? <Button onClick={() => updateItems()}>Update Cart </Button> : <Button>Checkout</Button> }
+      { flag[0] ? <Button onClick={() => updateItems()}>Update Cart </Button> : <Button onClick={() => checkout()}>Checkout</Button> }
     </React.Fragment>
   );
 }
