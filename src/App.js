@@ -20,7 +20,7 @@ import 'firebase/database';
 
 import { positions } from '@material-ui/system';
 
-const db = firebase.database().ref();
+const db = firebase.database();
 
 const uiConfig = {
   signInFlow: 'popup',
@@ -31,6 +31,7 @@ const uiConfig = {
     signInSuccessWithAuthResult: () => false
   }
 };
+
 const Welcome = ({ user }) => (
   <Message color="info">
     <Message.Header>
@@ -99,58 +100,51 @@ const imgParser = (sku) => {
   return (prefix+sku+suffix);
 }
 
-const SimpleCardList = ({products,cart,setcart, inventory, setinventory}) => {
+const SimpleCardList = ({products,cart,setcart, inventory, user}) => {
   const handleClick = (num, price, size) => {
-    let newCart = [...cart];
     let newInventory = [...inventory];
-    console.log(size);
-    if(cart.find(({sku}) => sku == num) != undefined) {
-      newCart.forEach(function(item, i) { if (item.sku == num) newCart[i][size] += 1; });
-      newInventory.forEach(function(item, i) { if (item.sku == num) newInventory[i][size] -= 1; });
+    let bin = cart.filter(function(item)  {return item[0] == num.toString()})
+    if (bin.length > 0){
+      bin[0][1][size] += 1;
+      let newbin = {};
+      newbin[num.toString()] = bin[0][1];
+      if(user != null) db.ref(`cart/${user.uid}`).update(newbin);
     } else {
+      let o = {};
       let obj ={
-        "sku": num,
-        "S": 0,
-        "M": 0,
-        "L": 0,
-        "XL": 0,
-        "price": price
+          "S": 0,
+          "M": 0,
+          "L": 0,
+          "XL": 0,
+          "price": price
       };
-      obj[size] += 1;
-      newCart.push(obj);
-      newInventory.forEach(function(item, i) { if (item.sku == num) newInventory[i][size] -= 1; });
+      o[num.toString()] = obj;
+      o[num.toString()][size] += 1;
+      if(user != null) db.ref(`cart/${user.uid}`).update(o);
     }
-    setcart(newCart);
-    setinventory(newInventory);
-    console.log(newInventory);
   };
   const removeitem = (num) => {
     let newCart = [...cart];
     let newInventory = [...inventory]
-    let found = newCart.find((item) => item.sku == num);
-    newCart = newCart.filter(function(item) {return item.sku != num});
-    newInventory.forEach(function(item, i) { if (item.sku == num){
-      newInventory[i]["S"] = found["S"];
-      newInventory[i]["M"] = found["M"];
-      newInventory[i]["L"] = found["L"];
-      newInventory[i]["XL"] = found["XL"];}});
-    setinventory(newInventory);
+    let found = cart.filter(function(item)  {return item[0] == num.toString()})
+    newCart = newCart.filter(function(item) {return item[0] != num});
     setcart(newCart);
+    if(user != null) db.ref(`cart/${user.uid}/${num}`).remove();
   };
   return (
     <React.Fragment>
     <Box display="flex" flexDirection="row-reverse">
-      <ShoppingCart cart={cart} style={{marginRight: "auto"}} removeitem={removeitem}></ShoppingCart>
+      <ShoppingCart cart={cart} style={{marginRight: "auto"}} removeitem={removeitem} inventory={inventory} user ={user}></ShoppingCart>
     </Box>
     <Container maxWidth="sm">
     <Grid container spacing={2} alignItems={"center"}>
         {products.map((item,index) => (
             <SimpleCard item={item}
-            num={item.sku}
+            num={item.sku.toString()}
             index={index}
             action={handleClick}
             inventory={inventory}
-            setinventory={setinventory}
+            cart={cart}
             />
         ))}
     </Grid>
@@ -159,26 +153,39 @@ const SimpleCardList = ({products,cart,setcart, inventory, setinventory}) => {
   );
 }
 
-const SimpleCard = ({item, num, index,action, inventory, setinventory}) => {
+const SimpleCard = ({item, num, index,action, inventory, cart}) => {
   const classes = useStyles();
   const disabled = () => {
     let result = [true,true,true,true];
-    if (Object.entries(inventory).length === 0) {
-      return result
+    let bin = cart.filter(function(x)  {return x[0] == num});
+    if (Object.entries(inventory).length === 0 || inventory.find((elem) =>  elem.sku == num) == undefined) {
+      return result;
+    } else if (bin.length == 0) {
+      if(inventory.find((elem) =>  elem.sku == num)["S"] > 0) {
+        result[0] = false;
+      }
+      if(inventory.find((elem) =>  elem.sku == num)["M"] > 0){
+        result[1] = false;
+      }
+      if(inventory.find((elem) =>  elem.sku == num)["L"] > 0){
+        result[2] = false;
+      }
+      if(inventory.find((elem) =>  elem.sku == num)["XL"] > 0){
+        result[3] = false;
+      }
+
     } else {
-        if(inventory.find((elem) =>  elem.sku == num) != undefined) {
-          if(inventory.find((elem) =>  elem.sku == num)["S"] > 0){
-            result[0] = false;
-          }
-          if(inventory.find((elem) =>  elem.sku == num)["M"] > 0){
-            result[1] = false;
-          }
-          if(inventory.find((elem) =>  elem.sku == num)["L"] > 0){
-            result[2] = false;
-          }
-          if(inventory.find((elem) =>  elem.sku == num)["XL"] > 0){
-            result[3] = false;
-          }
+        if(inventory.find((elem) =>  elem.sku == num)["S"]-bin[0][1]["S"] > 0) {
+          result[0] = false;
+        }
+        if(inventory.find((elem) =>  elem.sku == num)["M"]-bin[0][1]["M"] > 0){
+          result[1] = false;
+        }
+        if(inventory.find((elem) =>  elem.sku == num)["L"]-bin[0][1]["L"] > 0){
+          result[2] = false;
+        }
+        if(inventory.find((elem) =>  elem.sku == num)["XL"]-bin[0][1]["XL"] > 0){
+          result[3] = false;
         }
       }
     return result;
@@ -230,7 +237,7 @@ const App = () => {
   const [data, setData] = useState({});
   const [inventory, setInventory] = useState({});
   const [cartdata, setCart] = useState({});
-  const cart = Object.values(cartdata)
+  const cart = Object.entries(cartdata);
   const products = Object.values(data);
   const [user, setUser] = useState(null);
   const processInventory = (json) => {
@@ -241,7 +248,6 @@ const App = () => {
       newvals[i].sku = keys[i]
     }
     setInventory(newvals);
-    console.log([...newvals])
   };
   useEffect(() => {
     const fetchProducts = async () => {
@@ -255,18 +261,32 @@ const App = () => {
     const handleData = snap => {
       if (snap.val()) processInventory(snap.val());
     }
-    db.on('value', handleData, error => alert(error));
-    return () => { db.off('value', handleData); };
+    db.ref(`inventory`).on('value', handleData, error => alert(error));
+    return () => { db.ref(`inventory`).off('value', handleData); };
   }, []);
+
   useEffect(() => {
    firebase.auth().onAuthStateChanged(setUser);
   }, []);
-
-
+  useEffect(() => {
+    const handleCart = snap => {
+      if (snap.val()){
+        setCart(snap.val());
+      } else {
+        setCart({});
+      }
+    }
+    if (user != null) {
+      db.ref(`cart/${user.uid}`).on('value', handleCart, error => alert(error));
+      return () => { db.ref(`cart/${user.uid}`).off('value', handleCart); };
+    } else {
+      return
+    }
+  }, [user]);
   return (
     <Container >
       <Banner user={ user }/>
-      <SimpleCardList products = {products} cart={cart} setcart={setCart} inventory={inventory} setinventory={setInventory}></SimpleCardList>
+      <SimpleCardList products = {products} cart={cart} setcart={setCart} inventory={inventory} setinventory={setInventory} user={user}></SimpleCardList>
     </Container>
   );
 };
